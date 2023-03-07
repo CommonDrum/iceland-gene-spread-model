@@ -1,25 +1,49 @@
 import uuid
 import random
+import numpy as np
+import matplotlib.pyplot as plt; plt.close('all')
+import networkx as nx
+from matplotlib.animation import FuncAnimation
+
+def animate_nodes(G, node_colors, pos=None, *args, **kwargs):
+    # define graph layout if None given
+    if pos is None:
+            pos = nx.spring_layout(G, scale = 1)
+
+    nodes = nx.draw_networkx_nodes(G, pos, *args, **kwargs)
+    edges = nx.draw_networkx_edges(G, pos, *args, **kwargs)
+    plt.axis('off')
+
+    
+    def update(ii):
+        # nodes are just markers returned by plt.scatter;
+        # node color can hence be changed in the same way like marker colors
+        # draw graph
+       
+        nodes.set_array(node_colors[ii])
+        return nodes,
+
+    fig = plt.gcf()
+    animation = FuncAnimation(fig, update, interval=50, frames=len(node_colors), blit=True)
+    return animation
+
 
 
 
 
 class Node:
-    def __init__(self, neighbors,parent,sex):
+    def __init__(self, neighbors,parents,sex):
         self.neighbors = neighbors # Think about using some kind of id instead of the actual node
 
         self.age = 0
         self.sex = sex # 1 == female 0 == male || for simplicity's sake stays constant for now
-        self.partner = None
-        self.parent = parent # Cannot be changed
-        self.id = uuid.uuid4()
+        self.partner = []
+        self.parents = parents # Cannot be changed
+        self.id = uuid.uuid1().int
         #generate unique id
-        
-
-
-
-    def set_parent(self, parent):
-        self.parent = parent
+    
+    def set_parents(self, parents):
+        self.parents = parents
     def set_partner(self, partner):
         self.partner = partner
     def set_age(self, age):
@@ -41,13 +65,14 @@ class Graph:
         self.num_of_nodes = len(nodes)
         self.idClass = uuid
 
-    def add_node(self, node):
-        self.nodes.append(node)
-        self.num_of_nodes += 1
+    def add_nodes(self, nodes):
+        for node in nodes:
+            self.nodes.append(node)
+            self.num_of_nodes += 1
 
     def create_node(self,neighbors,parent,sex): #Creates a node and adds it to the graph and adds the node to the neighbors' neighbor list
-        new_node = Node(neighbors,parent,sex)
-        self.add_node(new_node)
+        new_node = [Node(neighbors,parent,sex)]
+        self.add_nodes(new_node)
         for i in neighbors:
             i.neighbors.append(new_node)
         return new_node
@@ -93,34 +118,71 @@ class Graph:
         return output
         
 
+'''
+
+'''
+
 
 node1 = Node([],None,1)
 node2 = Node([],None,0)
 node3 = Node([],None,1)
 node4 = Node([],None,0)
 
+#add groups
 graph = Graph([])
 list_of_nodes = [node1,node2,node3,node4]
 graph.group(list_of_nodes)
-print(node1.neighbors)
-print(node2.neighbors)
-print(node3.neighbors)
+graph.add_nodes(list_of_nodes)
 
-running = True
+print(node1.id)
 
-while (running):
+
+
+
+
+running = 0
+nx_graph = nx.Graph()
+list_of_graphs = []
+color_frames = []
+
+while (running)< 5:
+    list_of_colors = []
+    for i in graph.get_nodes():
+        list_of_colors.append(i.sex)
+        nx_graph.add_node(i.id)
+        for j in i.neighbors:
+            nx_graph.add_edge(i.id,j)
+            if i.parents != None:
+                nx_graph.add_edge(i.id,i.parents[0])
+                nx_graph.add_edge(i.id,i.parents[1])   
+
+    list_of_graphs.append(nx_graph)
+    color_frames.append(list_of_colors)
+
     #Finding partners
-    for i in graph.get_females:
-        for j in graph.get_males:
-            if i.partner == None and j.partner == None:
-                i.partner = j
-                j.partner = i
+    for i in graph.get_females():
+        for j in graph.get_males():
+            if i.partner == [] and j.partner == [] and j.age >= 2 and i.age >= 2:
+                i.partner.append(j.id)
+                j.partner.append(i.id)
 
-    for i in graph.get_females:
-        if i.partner == None:
+# Making babies!
+    for i in graph.get_females():
+        if i.partner != None:
             i.add_age()
-            if i.age >= 5:
-                graph.del_node(i.id)       
-    if random.random() < 0.5:
-        running = False
+            if random.randint(0,100) < 50:
+                graph.create_node([],[i.id,i.partner],random.randint(0,2))
+#
+    running += 1
+print(graph.get_num_of_nodes())
+
+for i in list_of_graphs:
+    index = 0
+    animation = animate_nodes(i, color_frames[index])
+    animation.save('test'+str(index)+'.gif', writer='imagemagick', savefig_kwargs={'facecolor':'white'}, fps=1)
     
+    index += 1
+
+
+# To animate I need to create a list of lists of node colors
+# And list of lists of nodes 

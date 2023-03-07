@@ -32,13 +32,14 @@ def main(total_nodes = 50,time_steps = 20):
     num_of_red = []
     num_of_blue = []
     graph = nx.gnp_random_graph(total_nodes, p = 0.75, seed=None, directed=False) 
+    print (graph.edges)
     node_colors = np.random.randint(0, 2, size=(total_nodes))
     color_frames= np.empty([1, total_nodes])
     color_frames[0] = node_colors
     print(color_frames) 
     counter = 0
 
-    while (len(np.unique(node_colors)) != 1 and counter <= 50000):
+    while (len(np.unique(node_colors)) != 1 and counter <= 5):
         
         index1 = np.random.randint (0,total_nodes)
         index2 = np.random.randint(0,len(graph[index1]))
@@ -70,6 +71,7 @@ def main(total_nodes = 50,time_steps = 20):
     plt.plot(num_of_blue,color="blue")
     plt.plot(num_of_red,color="red")
     plt.show()
+
 
 
 main()
