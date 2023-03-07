@@ -10,18 +10,23 @@ def animate_nodes(G, node_colors, pos=None, *args, **kwargs):
     if pos is None:
             pos = nx.spring_layout(G, scale = 1)
 
-    nodes = nx.draw_networkx_nodes(G, pos, *args, **kwargs)
-    edges = nx.draw_networkx_edges(G, pos, *args, **kwargs)
+    
     plt.axis('off')
 
     
     def update(ii):
+        # clear current graph
+
         # nodes are just markers returned by plt.scatter;
         # node color can hence be changed in the same way like marker colors
         # draw graph
-       
+        
+        nodes = nx.draw_networkx_nodes(G[ii], pos, *args, **kwargs)
+        edges = nx.draw_networkx_edges(G[ii], pos, *args, **kwargs)
         nodes.set_array(node_colors[ii])
-        return nodes,
+        plt.clf()
+        fig = plt.gcf()
+        return nodes, edges
 
     fig = plt.gcf()
     animation = FuncAnimation(fig, update, interval=50, frames=len(node_colors), blit=True)
@@ -123,29 +128,31 @@ class Graph:
 '''
 
 
-node1 = Node([],None,1)
-node2 = Node([],None,0)
+#node1 = Node([],None,1)
+#node2 = Node([],None,0)
 node3 = Node([],None,1)
 node4 = Node([],None,0)
 
 #add groups
 graph = Graph([])
-list_of_nodes = [node1,node2,node3,node4]
+list_of_nodes = [node3,node4]
 graph.group(list_of_nodes)
 graph.add_nodes(list_of_nodes)
 
-print(node1.id)
+#print(node1.id)
 
 
 
 
 
 running = 0
-nx_graph = nx.Graph()
+
 list_of_graphs = []
 color_frames = []
 
+
 while (running)< 5:
+    nx_graph = nx.Graph()
     list_of_colors = []
     for i in graph.get_nodes():
         list_of_colors.append(i.sex)
@@ -156,33 +163,43 @@ while (running)< 5:
                 nx_graph.add_edge(i.id,i.parents[0])
                 nx_graph.add_edge(i.id,i.parents[1])   
 
-    list_of_graphs.append(nx_graph)
-    color_frames.append(list_of_colors)
+    
 
     #Finding partners
     for i in graph.get_females():
         for j in graph.get_males():
-            if i.partner == [] and j.partner == [] and j.age >= 2 and i.age >= 2:
+            if i.partner and j.partner == [] and j.age >= 2 and i.age >= 2:
                 i.partner.append(j.id)
                 j.partner.append(i.id)
 
-# Making babies!
+    # Making babies!
     for i in graph.get_females():
         if i.partner != None:
             i.add_age()
             if random.randint(0,100) < 50:
                 graph.create_node([],[i.id,i.partner],random.randint(0,2))
+
+    list_of_graphs.append(nx_graph)
+    color_frames.append(list_of_colors)
 #
     running += 1
 print(graph.get_num_of_nodes())
 
-for i in list_of_graphs:
-    index = 0
-    animation = animate_nodes(i, color_frames[index])
-    animation.save('test'+str(index)+'.gif', writer='imagemagick', savefig_kwargs={'facecolor':'white'}, fps=1)
+index = 0
     
-    index += 1
+#plt.figure(index)
+#animation = animate_nodes(list_of_graphs, [color_frames[index]])
+#animation.save('test'+str(index)+'.gif', writer='imagemagick', savefig_kwargs={'facecolor':'white'}, fps=1)
+    
+index += 1
 
+nx.draw(nx_graph)
 
+for i in list_of_graphs:
+    plt.clf()
+    pos = nx.spring_layout(i, scale = 1)
+    nx.draw(i, pos)
+    plt.show()
+    
 # To animate I need to create a list of lists of node colors
 # And list of lists of nodes 
