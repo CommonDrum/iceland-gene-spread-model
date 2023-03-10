@@ -186,6 +186,8 @@ while (running)< 10:
                 print(i.id,i.partner)
                 graph.create_node([],[i.id,i.partner],random.randint(0,2))
 
+                # com
+
     
     running += 1
 print(graph.get_num_of_nodes())
