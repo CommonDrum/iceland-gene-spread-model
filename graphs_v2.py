@@ -9,14 +9,14 @@ def animate_nodes(G, node_colors, pos=None, *args, **kwargs):
     # define graph layout if None given
     if pos is None:
             pos = nx.spring_layout(G, scale = 1)
-
+#Does this work now?
     
     plt.axis('off')
 
     
     def update(ii):
         # clear current graph
-
+        print("lol")
         # nodes are just markers returned by plt.scatter;
         # node color can hence be changed in the same way like marker colors
         # draw graph
@@ -132,6 +132,10 @@ node1 = Node([],[],1)
 node2 = Node([],[],0)
 node3 = Node([],[],1)
 node4 = Node([],[],0)
+node5 = Node([],[],1)
+node6 = Node([],[],0)
+node7 = Node([],[],1)
+node8 = Node([],[],0)
 
 #add groups
 graph = Graph([])
