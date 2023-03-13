@@ -10,31 +10,52 @@ from matplotlib.animation import FuncAnimation
 # Create an empty graph
 G = nx.Graph()
 
-# Generate nodes with attributes
-for i in range(1, 1001):
-    age = random.randint(18, 65)
-    gender = random.choice(["Male", "Female"])
-    occupation = random.choice(["Student", "Engineer", "Teacher", "Doctor", "Lawyer"])
-    location = random.choice(["City A", "City B", "City C"])
-    interests = random.choice(["Sports", "Music", "Travel", "Reading"])
-    personality = random.choice(["Introverted", "Extroverted", "Analytical", "Emotional"])
-    G.add_node(i, age=age, gender=gender, occupation=occupation, location=location, interests=interests, personality=personality)
+def init_graph(G,pairs, singles):
 
-# Generate relationships
-for i in range(1, 1001):
-    if G.edges(i) < 1:
-        for j in range(i+1, 1001):
-            if G.number_of_edges(j) < 1:
-                if random.random() < 0.1: # 10% probability of forming a connection
-                    G.add_edge(i, j)
+    infection = [True,False]
+    weights_infection = [0.1, 0.9]
 
-# Set node and edge attributes
-node_size = 20
-edge_width = 0.2
+    no_of_children = [0,1,2,3]
+    weights_children = [0.3, 0.2, 0.4, 0.1]
 
-# Visualize the graph
-pos = nx.spring_layout(G, k = 2)
-nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color="lightblue")
-nx.draw_networkx_edges(G, pos, width=edge_width, edge_color="gray")
-plt.axis("off")
+    sex = ['F','M']
+
+    for i in range(pairs):
+            id1 = uuid.uuid1().int
+            id2 = uuid.uuid1().int
+            G.add_node(id1, age=random.randint(2,6), sex='M', is_infected=random.choices(infection, weights_infection)[0], partner=id2,family = [])
+            G.add_node(id2, age=random.randint(2,6), sex='F', is_infected=random.choices(infection, weights_infection)[0], partner=id1,family = [])
+            G.add_edge(id2,id1)
+            id_family = [id1,id2]
+        
+            for j in range(random.choices(no_of_children, weights_children)[0]):
+                id_child = uuid.uuid1().int
+                G.add_node(id_child, age=random.randint(0,2), sex=random.choices(sex), is_infected=random.choices(infection, weights_infection)[0], partner=None,family = [])
+                id_family.append(id_child)
+
+
+            for j in id_family:
+                for k in id_family:
+                    if j!=k:
+                        G.nodes[j]["family"].append(k)
+                        G.add_edge(j,k)
+
+    for i in range(singles):
+        G.add_node(uuid.uuid1().int, age=random.randint(0,2), sex=random.choices(sex), is_infected=random.choices(infection, weights_infection)[0], partner=None,family = [])
+               
+
+
+
+
+
+# use "family" variable this will ease up the process of pairing etc. 
+# this can iterate through three generations of a family befor pairing
+
+
+init_graph (G,10,10)
+# draw the graph
+nx.draw(G)
+
+# show the graph
 plt.show()
+#print(G.nodes)
