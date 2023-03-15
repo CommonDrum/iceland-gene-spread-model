@@ -9,6 +9,11 @@ from matplotlib.animation import FuncAnimation
 
 # Create an empty graph
 G = nx.Graph()
+
+          
+
+
+
 infection = [True,False]
 weights_infection = [0.1, 0.9]
 
@@ -17,9 +22,26 @@ weights_children = [0.3, 0.2, 0.4, 0.1]
 
 sex = ['F','M']
 
-new_friends = 4
+new_friends = 2
 
 reproduction_rate = 0.9
+
+def test_init(G):
+    id1 = uuid.uuid1().int
+    id2 = uuid.uuid1().int
+    id3 = uuid.uuid1().int
+    id4 = uuid.uuid1().int
+
+    G.add_node(id1, age=random.randint(2,6), sex='M', is_infected=random.choices(infection, weights_infection)[0], partner=0,family = [],children = [])
+    G.add_node(id2, age=random.randint(2,6), sex='F', is_infected=random.choices(infection, weights_infection)[0], partner=0,family = [],children = [])
+    G.add_node(id3, age=random.randint(2,6), sex='M', is_infected=random.choices(infection, weights_infection)[0], partner=0,family = [],children = [])
+    G.add_node(id4, age=random.randint(2,6), sex='F', is_infected=random.choices(infection, weights_infection)[0], partner=0,family = [],children = [])
+    G.add_edge(id2,id1)
+    G.add_edge(id3,id4)
+    G.add_edge(id1,id3)
+    G.add_edge(id2,id4)
+
+
 
 
 def init_graph(G,pairs, singles):
@@ -38,7 +60,7 @@ def init_graph(G,pairs, singles):
         
             for j in range(random.choices(no_of_children, weights_children)[0]):
                 id_child = uuid.uuid1().int
-                G.add_node(id_child, age=random.randint(0,2), sex=random.choices(sex), is_infected=random.choices(infection, weights_infection)[0], partner=None,family = [])
+                G.add_node(id_child, age=random.randint(0,2), sex=random.choices(sex), is_infected=random.choices(infection, weights_infection)[0], partner=0,family = [],children = [])
                 id_family.append(id_child)
 
 
@@ -49,7 +71,7 @@ def init_graph(G,pairs, singles):
                         G.add_edge(j,k)
 
     for i in range(singles):
-        G.add_node(uuid.uuid1().int, age=random.randint(0,2), sex=random.choices(sex), is_infected=random.choices(infection, weights_infection)[0], partner=None,family = [])
+        G.add_node(uuid.uuid1().int, age=random.randint(0,2), sex=random.choices(sex), is_infected=random.choices(infection, weights_infection)[0], partner=0,family = [],children = [])
     
     #for each node find 5 random nodes and create an edge between them.
     # Without duplicates and self loops
@@ -61,9 +83,10 @@ def init_graph(G,pairs, singles):
 def find_partners(G):
     #iterate through all the nodes
     for i in list(G.nodes):
-        if G.nodes[i]["partner"] == None:
-            for neighbor in G.neighbors(i):
-                if G.nodes[neighbor]["partner"] == None and G.nodes[i]["sex"] != G.nodes[neighbor]["sex"]:
+        if G.nodes[i]["partner"] == 0:
+            print(list(G.neighbors(i)))
+            for neighbor in list(G.neighbors(i)):
+                if neighbor not in G.nodes[i]["family"] and G.nodes[neighbor]["partner"] == 0 and G.nodes[i]["sex"] != G.nodes[neighbor]["sex"]:
                     #print (neighbor,i)
                     G.nodes[neighbor]["partner"] = int(i)
                     G.nodes[i]["partner"] = int(neighbor)
@@ -73,24 +96,25 @@ def find_partners(G):
 
 def make_children(G):
     weights_infected_parents = [1,0]
-    all_children = []
     for i in list(G.nodes):
-        #add dependence on age and no_of_children
-        print (G.nodes[i]["partner"])
-        if G.nodes[i]["partner"] != None and G.nodes[i]["sex"] == "F":
-            print("making children")
-            partner = G.nodes[i]["partner"]
-            if random.random() < reproduction_rate:
-                id_child = uuid.uuid1().int
-                all_children.append(id_child)
-
-                family =G.nodes[i]["family"]
-                family.append(G.nodes[partner]["family"])
-                if G.nodes[partner]["is_infected"] or G.nodes[i]["is_infected"]:
-                    G.add_node(id_child, age=0, sex=random.choices(sex), is_infected=True, partner=None,family = family)
+        #is a woman and has a partner
+        if G.nodes[i]["sex"] == 'F' and G.nodes[i]["partner"] != 0 and random.random() < reproduction_rate and G.nodes[i]["age"] > 1:
+                #if either of the parents is infected, the child is infected
+                id = uuid.uuid1().int
+                if G.nodes[i]["is_infected"]:
+                    G.add_node(id, age=0, sex=random.choices(sex)[0], is_infected=True, partner=0,family = [i,G.nodes[i]["partner"]],children = [])
                 else:
-                    G.add_node(id_child, age=0, sex=random.choices(sex), is_infected=False, partner=None,family = family)
-    print (len(all_children))
+                    G.add_node(id, age=0, sex=random.choices(sex)[0], is_infected=False, partner=0,family = [i,G.nodes[i]["partner"]],children = [])
+                G.add_edge(i,id)
+                G.add_edge(G.nodes[i]["partner"],id)    
+                G.nodes[i]["children"].append(id)
+                G.nodes[G.nodes[i]["partner"]]["children"].append(id)
+                print(id)
+
+
+
+
+
 
 
                 
@@ -107,7 +131,7 @@ def ageing(G):
                 #if n in G.nodes[node]["children"]:
                  #   G.nodes[n]["children"].remove(node)
                 if n == partner:
-                    G.nodes[n]["partner"] = None
+                    G.nodes[n]["partner"] = 0
             G.remove_node(node)
             
         elif G.nodes[node]["is_infected"]:
@@ -136,7 +160,8 @@ def color_nodes(G):
     return colors
 
 
-init_graph (G,100,0)
+#init_graph (G,0,0)
+test_init(G)
 infected_population = []
 population = []
 
@@ -169,7 +194,7 @@ def update(ii):
     plt.title('Frame %d' % ii)
 
 # create the animation
-animation = FuncAnimation(plt.gcf(), update, frames=range(10), interval=1000)
+animation = FuncAnimation(plt.gcf(), update, frames=range(1000), interval=1500)
 
 # show the animation
 plt.show()
