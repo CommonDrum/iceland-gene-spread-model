@@ -5,6 +5,7 @@ import scipy as sp
 import matplotlib.pyplot as plt; plt.close('all')
 import networkx as nx
 from matplotlib.animation import FuncAnimation
+import math
 
 
 
@@ -23,12 +24,18 @@ class GraphInterface():
         self.no_of_children = [0,1,2,3]
         self.weights_children = [0.3, 0.2, 0.4, 0.1] #probability of having a child depending on the number of children
 
+        self.capacity = 4000
+
         self.sex = ['F','M']
         self.sex_weights = [0.5, 0.5] #probability of having a child depending on the number of children
-        self.reproduction_rate = [0.20,0.11,0.10,0.03,0.02,0] #probability of having a child depending on the number of children
+        self.reproduction_rate = [0.38,0.31,0.14,0.03,0.02,0] #probability of having a child depending on the number of children
+
+        self.age = [0,1,2,3,4,5,6]
+        self.age_weights = [0.1,0.2,0.3,0.2,0.1,0.05,0.05] #probability of having a child depending on the number of children
 
         self.population = 0
         self.infected = 0
+
         self.both_parents_infected = [0.75, 0.25]
         self.one_parents_infected = [0.5, 0.5]
 
@@ -74,7 +81,7 @@ class GraphInterface():
         for i in list(self.G.nodes):
             #if node is female (to prevent duplicate children) and is has a partner
             no_of_children = self.G.nodes[i]['no_of_children']
-            if self.G.nodes[i]['partner'] != 0 and self.G.nodes[i]['sex'] == 'F' and random.random() > self.reproduction_rate[no_of_children]:
+            if self.G.nodes[i]['partner'] != 0 and self.G.nodes[i]['sex'] == 'F' and random.random() < self.reproduction_rate[no_of_children]:
                 #in the future inherite the infection status from the parents
                 is_infected = self.infection_spread(i)
 
@@ -114,7 +121,7 @@ class GraphInterface():
 
     def initialize(self,size):
         for i in range(size):
-            age = random.randint(0,5)
+            age = random.choices(self.age, self.age_weights)[0]
             is_infected = random.choices(self.infection, self.weights_infection)[0]
             self.new_node(age=age, is_infected=is_infected)
 
@@ -140,10 +147,12 @@ class GraphInterface():
     def reproduce_node(self, node):
         no_of_children = self.G.nodes[node]['no_of_children']
         partner = self.G.nodes[node]['partner']
-       
-        if partner == 0 or random.random() < self.reproduction_rate[no_of_children]:
 
+        reproduction_rate = self.reproduction_rate[no_of_children] * -math.log(len(self.G.nodes)/self.capacity)
+       
+        if partner == 0 or random.random() > reproduction_rate or self.G.nodes[node]["sex"] == 'M':
             return
+        
         is_infected = self.G.nodes[node]['is_infected']
         is_infected_partner = self.G.nodes[partner]['is_infected']
         is_infected_child = False
@@ -151,9 +160,9 @@ class GraphInterface():
 
         
         if is_infected and is_infected_partner:
-                is_infected = random.choices(self.infection, self.both_parents_infected)[0]
+                is_infected_child = random.choices(self.infection, self.both_parents_infected)[0]
         elif is_infected or is_infected_partner:
-                is_infected = random.choices(self.infection, self.one_parents_infected)[0]
+                is_infected_child = random.choices(self.infection, self.one_parents_infected)[0]
         
         child = self.new_node(is_infected=is_infected_child)
         self.G.add_edge(node,child, label='family')
@@ -174,7 +183,7 @@ class GraphInterface():
                 
     def age_node(self, node):
         self.G.nodes[node]['age'] += 1
-        if self.G.nodes[node]['age'] > 5:
+        if self.G.nodes[node]['age'] > 6:
             if self.G.nodes[node]['partner'] != 0:
             #change the partner status of the partner
                 p = self.G.nodes[node]['partner']
@@ -195,17 +204,24 @@ class GraphInterface():
 
 
     
-G = GraphInterface()
-G.initialize(100)
-populaion_list = []
-infected_list = []
-for i in range (10):
-    G.step()
-    populaion_list.append(G.population)
-    infected_list.append(G.infected)
 
-plt.plot(populaion_list)
-plt.plot(infected_list)
+
+
+
+for i in range (1):
+    G = GraphInterface()
+    G.initialize(600)
+    populaion_list = []
+    infected_list = []
+    for i in range (1000):
+        G.step()
+        populaion_list.append(G.population)
+        infected_list.append(G.infected)
+        if G.infected == 0:
+            break
+
+    plt.plot(populaion_list)
+    plt.plot(infected_list)
 plt.show()
 
 """
