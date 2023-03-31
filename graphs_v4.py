@@ -19,7 +19,7 @@ class GraphInterface():
         self.G = nx.Graph()
 
         self.infection = [True,False]
-        self.weights_infection = [0.2, 0.8] #probability of being infected
+        self.weights_infection = [0.1, 0.9] #probability of being infected
 
         self.no_of_children = [0,1,2,3]
         self.weights_children = [0.3, 0.2, 0.4, 0.1] #probability of having a child depending on the number of children
@@ -210,10 +210,10 @@ class GraphInterface():
 
 for i in range (1):
     G = GraphInterface()
-    G.initialize(600)
+    G.initialize(1200)
     populaion_list = []
     infected_list = []
-    for i in range (1000):
+    for i in range (100):
         G.step()
         populaion_list.append(G.population)
         infected_list.append(G.infected)
