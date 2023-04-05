@@ -13,6 +13,9 @@ import math
 
 class GraphInterface():
     # Create an empty graph
+    #TODO: Fix the jump
+    #TODO: Maybe implement distance
+    #TODO: 3D graph of infected, normal and time
     
     
     def __init__(self):
@@ -24,11 +27,12 @@ class GraphInterface():
         self.no_of_children = [0,1,2,3]
         self.weights_children = [0.3, 0.2, 0.4, 0.1] #probability of having a child depending on the number of children
 
-        self.capacity = 4000
+        self.capacity = 400
 
         self.sex = ['F','M']
         self.sex_weights = [0.5, 0.5] #probability of having a child depending on the number of children
         self.reproduction_rate = [0.38,0.31,0.14,0.03,0.02,0] #probability of having a child depending on the number of children
+        self.rr_age_modifier = [0.0,0.1,1,0.9,0.4,0.03,0.01]
 
         self.age = [0,1,2,3,4,5,6]
         self.age_weights = [0.1,0.2,0.3,0.2,0.1,0.05,0.05] #probability of having a child depending on the number of children
@@ -36,17 +40,27 @@ class GraphInterface():
         self.population = 0
         self.infected = 0
 
+        self.regions=[
+            "Southwest" ,
+            "Reykjavik North",
+            "Reykjavik South",
+            "South" ,
+            "Northeast",
+            "Northwest"]
+        self.region_distribution= [0.28,0.185,0.183,0.145,0.12,0.087]
+        
+
         self.both_parents_infected = [0.75, 0.25]
         self.one_parents_infected = [0.5, 0.5]
 
         self.reproduction_age = 2
 
-        self.friend_limit = 4
+        self.friend_limit = 5
 
 
-    def new_node(self , age = 0, is_infected = False, partner = 0, family = [], no_of_children = 0):
+    def new_node(self , age = 0, is_infected = False, partner = 0, family = [], no_of_children = 0, region = ""):
         id = uuid.uuid1().int
-        self.G.add_node(id, age=age, sex=random.choices(self.sex,self.sex_weights)[0], is_infected=is_infected, partner=partner, no_of_children=no_of_children)
+        self.G.add_node(id, age=age, sex=random.choices(self.sex,self.sex_weights)[0], is_infected=is_infected, partner=partner, no_of_children=no_of_children,region=region)
         #connect the family
         for i in family:
             if i != id:
@@ -80,8 +94,12 @@ class GraphInterface():
         new_children = 0
         for i in list(self.G.nodes):
             #if node is female (to prevent duplicate children) and is has a partner
+            
+            
             no_of_children = self.G.nodes[i]['no_of_children']
-            if self.G.nodes[i]['partner'] != 0 and self.G.nodes[i]['sex'] == 'F' and random.random() < self.reproduction_rate[no_of_children]:
+            reproduction_rate = self.reproduction_rate[no_of_children] * -math.log(self.G.number_of_nodes/self.capacity)
+            
+            if self.G.nodes[i]['partner'] != 0 and self.G.nodes[i]['sex'] == 'F' and random.random() < reproduction_rate:
                 #in the future inherite the infection status from the parents
                 is_infected = self.infection_spread(i)
 
@@ -89,8 +107,8 @@ class GraphInterface():
                 for neighbor in self.G.neighbors(i):
                     if self.G.get_edge_data(i, neighbor).get('label') == 'family':
                         family_nodes.append(neighbor)
-
-                child = self.new_node(family=family_nodes, is_infected=is_infected)
+                region = self.G.nodes[i]['region']
+                child = self.new_node(family=family_nodes, is_infected=is_infected,region=region)
                 new_children += 1
                 #add all family nodes from both partners
         return new_children
@@ -122,8 +140,10 @@ class GraphInterface():
     def initialize(self,size):
         for i in range(size):
             age = random.choices(self.age, self.age_weights)[0]
+        
+            chosen_region = random.choices(self.regions,self.region_distribution)[0]
             is_infected = random.choices(self.infection, self.weights_infection)[0]
-            self.new_node(age=age, is_infected=is_infected)
+            self.new_node(age=age, is_infected=is_infected,region=chosen_region)
 
     def count_friends(self, node):
         friends = 0
@@ -141,14 +161,19 @@ class GraphInterface():
             random_node = random.choice(list(self.G.nodes))
             # If the random node is not already a friend
             if random_node not in list(self.G.neighbors(node)) and random_node != node:
-                # Add a new edge
-                self.G.add_edge(node,random_node, label='friend')
+                if self.G.nodes[random_node]["region"] == self.G.nodes[node]["region"] and random.random() <= 0.8:
+                    self.G.add_edge(node,random_node, label='friend')
+                elif self.G.nodes[random_node]["region"] != self.G.nodes[node]["region"] and random.random() <= 0.2:
+                    self.G.add_edge(node,random_node, label='friend')
 
     def reproduce_node(self, node):
         no_of_children = self.G.nodes[node]['no_of_children']
         partner = self.G.nodes[node]['partner']
+        age = self.G.nodes[node]["age"]
+        if random.random() > self.rr_age_modifier[age]:
+            return
 
-        reproduction_rate = self.reproduction_rate[no_of_children] * -math.log(len(self.G.nodes)/self.capacity)
+        reproduction_rate = self.reproduction_rate[no_of_children] * -math.log(self.G.number_of_nodes()/self.capacity)
        
         if partner == 0 or random.random() > reproduction_rate or self.G.nodes[node]["sex"] == 'M':
             return
@@ -183,7 +208,7 @@ class GraphInterface():
                 
     def age_node(self, node):
         self.G.nodes[node]['age'] += 1
-        if self.G.nodes[node]['age'] > 6:
+        if self.G.nodes[node]['age'] > 5:
             if self.G.nodes[node]['partner'] != 0:
             #change the partner status of the partner
                 p = self.G.nodes[node]['partner']
@@ -210,10 +235,10 @@ class GraphInterface():
 
 for i in range (1):
     G = GraphInterface()
-    G.initialize(1200)
+    G.initialize(450)
     populaion_list = []
     infected_list = []
-    for i in range (100):
+    for i in range (200):
         G.step()
         populaion_list.append(G.population)
         infected_list.append(G.infected)
