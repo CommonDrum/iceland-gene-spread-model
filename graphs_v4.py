@@ -27,15 +27,17 @@ class GraphInterface():
         self.no_of_children = [0,1,2,3]
         self.weights_children = [0.3, 0.2, 0.4, 0.1] #probability of having a child depending on the number of children
 
-        self.capacity = 400
+        self.capacity = 2000
 
         self.sex = ['F','M']
         self.sex_weights = [0.5, 0.5] #probability of having a child depending on the number of children
         self.reproduction_rate = [0.38,0.31,0.14,0.03,0.02,0] #probability of having a child depending on the number of children
-        self.rr_age_modifier = [0.0,0.1,1,0.9,0.4,0.03,0.01]
+        #self.rr_age_modifier = [0.0,0.1,1,0.9,0.4,0.03,0.01]
+        self.offspring_penalty = [0.2,0.25,0.3,0.4,0.5]
+        self.age_penalty = [1,0.1,0.2,0.35,0.4,0.5,1]
 
-        self.age = [0,1,2,3,4,5,6]
-        self.age_weights = [0.1,0.2,0.3,0.2,0.1,0.05,0.05] #probability of having a child depending on the number of children
+        self.age = [0,1,2,3,4,5]
+        self.age_weights = [0.18,0.18,0.16,0.16,0.16,0.16] #probability of having a child depending on the number of children
 
         self.population = 0
         self.infected = 0
@@ -95,9 +97,10 @@ class GraphInterface():
         for i in list(self.G.nodes):
             #if node is female (to prevent duplicate children) and is has a partner
             
-            
-            no_of_children = self.G.nodes[i]['no_of_children']
-            reproduction_rate = self.reproduction_rate[no_of_children] * -math.log(self.G.number_of_nodes/self.capacity)
+            reproduction_rate = 1
+            reproduction_rate -= self.offspring_penalty[self.G.nodes[i]['no_of_children']]
+            reproduction_rate -= self.age_penalty[self.G.nodes[i]['age']]
+            reproduction_rate *= -math.log(self.G.number_of_nodes/self.capacity)*4
             
             if self.G.nodes[i]['partner'] != 0 and self.G.nodes[i]['sex'] == 'F' and random.random() < reproduction_rate:
                 #in the future inherite the infection status from the parents
@@ -169,11 +172,14 @@ class GraphInterface():
     def reproduce_node(self, node):
         no_of_children = self.G.nodes[node]['no_of_children']
         partner = self.G.nodes[node]['partner']
-        age = self.G.nodes[node]["age"]
-        if random.random() > self.rr_age_modifier[age]:
-            return
 
-        reproduction_rate = self.reproduction_rate[no_of_children] * -math.log(self.G.number_of_nodes()/self.capacity)
+        reproduction_rate = 1
+        reproduction_rate -= self.offspring_penalty[self.G.nodes[node]['no_of_children']]
+        reproduction_rate -= self.age_penalty[self.G.nodes[node]['age']]
+        reproduction_rate *= -math.log(self.G.number_of_nodes()/self.capacity)*2
+        
+
+        
        
         if partner == 0 or random.random() > reproduction_rate or self.G.nodes[node]["sex"] == 'M':
             return
@@ -224,7 +230,9 @@ class GraphInterface():
             self.partner_node(node)
             self.reproduce_node(node)
             self.age_node(node)
-
+    def step2(self):
+        for node in list(self.G.nodes):
+            self.find_friends_node(node)
 
 
 
@@ -235,18 +243,24 @@ class GraphInterface():
 
 for i in range (1):
     G = GraphInterface()
-    G.initialize(450)
+    G.initialize(600)
     populaion_list = []
     infected_list = []
-    for i in range (200):
+
+    for i in range (8):
+        G.step2()
+
+    for i in range (50):
         G.step()
-        populaion_list.append(G.population)
+        populaion_list.append(G.population - G.infected)
         infected_list.append(G.infected)
-        if G.infected == 0:
-            break
+        #if G.infected == 0:
+            #break
 
     plt.plot(populaion_list)
     plt.plot(infected_list)
+    ax = plt.figure().add_subplot(projection='3d')
+    ax.plot(xs = populaion_list, ys = infected_list, zs = range(50))
 plt.show()
 
 """
