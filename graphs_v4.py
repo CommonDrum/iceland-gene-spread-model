@@ -36,7 +36,7 @@ class GraphInterface():
         #self.rr_age_modifier = [0.0,0.1,1,0.9,0.4,0.03,0.01]
         self.offspring_penalty = [0.2,0.20,0.3,0.4,0.5,1,1,1]
         self.age_penalty = [1,0.75,0.1,0.30,0.75,0.85,1,1,1]
-        self.rural_reproduction_bonus = 0.1
+        self.rural_reproduction_bonus = 0.01
         self.urban_bonus =  - 0.05
 
         self.age = [0,1,2,3,4,5,6,7,8]
@@ -49,6 +49,7 @@ class GraphInterface():
         self.no_of_children_by_parrent_age= [0,0,0,0,0,0,0,0,0]
         self.age_distribution = [0,0,0,0,0,0,0,0,0]
         self.age_of_death = [0,0,0,0,0,0,0,0,0,0]
+        self.region_population = [0,0,0,0,0,0]
 
 
 
@@ -62,7 +63,7 @@ class GraphInterface():
         self.region_distribution= [0.28,0.185,0.183,0.145,0.12,0.087]
         self.region_is_rural = [False,False,False,True,True,True]
       
-      
+
         self.both_parents_infected = [0.75, 0.25]
         self.one_parents_infected = [0.5, 0.5]
 
@@ -75,6 +76,8 @@ class GraphInterface():
         id = uuid.uuid1().int
         self.G.add_node(id, age=age, sex=random.choices(self.sex,self.sex_weights)[0], is_infected=is_infected, partner=partner, no_of_children=no_of_children,region=region)
         #connect the family
+        region_index = self.regions.index(region)
+        self.region_population[region_index] += 1
         for i in family:
             if i != id:
                 self.G.add_edge(id,i, family = True)
@@ -176,6 +179,8 @@ class GraphInterface():
             if self.G.nodes[node]['is_infected']:
                 self.infected -= 1
             self.age_of_death[self.G.nodes[node]['age']] += 1
+            region_index = self.regions.index(self.G.nodes[node]['region'])
+            self.region_population[region_index] -= 1
             self.G.remove_node(node)
 
     def step(self):
@@ -195,17 +200,18 @@ class GraphInterface():
 
 
 
-for i in range (3):
+for i in range (1):
     G = GraphInterface()
     G.initialize(1600)
     populaion_list = []
     infected_list = []
     average_births_per_decade = 0
+    iteration_size = 100
 
     for i in range (2):
         G.step2()
 
-    for i in range (100):
+    for i in range (iteration_size):
         G.step()
         populaion_list.append(G.population)
         infected_list.append(G.infected)
@@ -214,7 +220,7 @@ for i in range (3):
         #if G.infected == 0:
             #break
 
-    average_births_per_decade = sum(G.no_of_children_by_parrent_age)/100
+    average_births_per_decade = sum(G.no_of_children_by_parrent_age)/iteration_size
     print(average_births_per_decade)
     plt.figure("1")
     plt.plot(populaion_list)
@@ -224,6 +230,7 @@ for i in range (3):
     print(G.no_of_children_by_parrent_age[2]/sum_of_births)
     print(G.no_of_children_by_parrent_age)
     print(G.age_of_death)
+    print(G.region_population)
     #plt.figure("2")
     #ax = plt.figure().add_subplot(projection='3d')
     #ax.plot(xs = populaion_list, ys = infected_list, zs = range(100) )
@@ -231,8 +238,7 @@ for i in range (3):
     #plt.ylabel("Infected")
     #plt.clabel("Time")
 
-print(G.no_of_children_by_parrent_age)
-print(G.age_of_death)
+
 plt.show()
 
 """
