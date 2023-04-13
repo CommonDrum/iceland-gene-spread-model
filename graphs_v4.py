@@ -12,9 +12,34 @@ import math
 
 
 class GraphInterface():
-    # Create an empty graph
-    #TODO: Fix the jump
-    #TODO: Maybe implement distance
+    
+    '''TODO:
+        - Migration :   
+            a) Choose a random sample of people from a region and move them to another region
+            b) randomly choose ammount of friends  to delete  and add the friends from the new region
+        - Decide on diffrent bonuses for rural
+        - More precise death rate
+        - Justify the reproduction rate and penalties
+        - Display graph
+        - Save statistics to a file:
+            a) Population
+            b) Infected
+            c) Age of mother at birth
+            d) Age of death
+            e) Age distribution
+            f) Region population
+            g) Migration rate
+            h) Death rate
+            i) Reproduction rate (general and per region)
+            j) Number of children per female
+    '''
+
+    '''TODO but not for me:
+        - overall migration rate (as % of population)
+        - figure out what regions are more popular to move to
+        - figure out what age people are most likely to move
+        - figure out what age people are most likely to die
+    '''
     
     
     
@@ -27,7 +52,7 @@ class GraphInterface():
         self.no_of_children = [0,1,2,3]
         self.weights_children = [0.3, 0.2, 0.4, 0.1] #probability of having a child depending on the number of children
 
-        self.capacity = 4000
+        self.capacity = 15000
 
         self.sex = ['F','M']
         self.sex_weights = [0.5, 0.5] #probability of having a child depending on the number of children
@@ -61,6 +86,7 @@ class GraphInterface():
             "Northeast",
             "Northwest"]
         self.region_distribution= [0.28,0.185,0.183,0.145,0.12,0.087]
+        self.migration_pull = [0.1,0.1,0.1,0.1,0.1,0.1]
         self.region_is_rural = [False,False,False,True,True,True]
       
 
@@ -164,6 +190,12 @@ class GraphInterface():
         if self.G.nodes[node]['partner'] == 0:
             for neighbor in self.G.neighbors(node):
                 if self.G.nodes[neighbor]['partner'] == 0 and self.G.nodes[neighbor]["sex"] != self.G.nodes[node]["sex"]:
+
+                    if random.random() <= 0.5:
+                        self.G.nodes[neighbor]['region'] = self.G.nodes[node]['region']
+                    else:
+                        self.G.nodes[node]['region'] = self.G.nodes[neighbor]['region']
+
                     self.G.nodes[node]['partner'] = neighbor
                     self.G.nodes[neighbor]['partner'] = node
                     return
@@ -195,51 +227,50 @@ class GraphInterface():
 
 
 
-    
-
-
-
-
-for i in range (1):
-    G = GraphInterface()
-    G.initialize(1600)
-    populaion_list = []
-    infected_list = []
-    average_births_per_decade = 0
-    iteration_size = 100
-
-    for i in range (2):
-        G.step2()
-
-    for i in range (iteration_size):
-        G.step()
+if __name__ == "__main__": 
+    for i in range (1):
+        G = GraphInterface()
+        G.initialize(8000)
+        print(G.region_population)
+        populaion_list = []
+        infected_list = []
+        average_births_per_decade = 0
+        iteration_size = 10
         populaion_list.append(G.population)
         infected_list.append(G.infected)
 
-        
-        #if G.infected == 0:
-            #break
+        for i in range (10):
+            G.step2()
 
-    average_births_per_decade = sum(G.no_of_children_by_parrent_age)/iteration_size
-    print(average_births_per_decade)
-    plt.figure("1")
-    plt.plot(populaion_list)
-    plt.plot(infected_list)
-    sum_of_births = sum(G.no_of_children_by_parrent_age)
-    print(G.no_of_children_by_parrent_age[1]/sum_of_births)
-    print(G.no_of_children_by_parrent_age[2]/sum_of_births)
-    print(G.no_of_children_by_parrent_age)
-    print(G.age_of_death)
-    print(G.region_population)
-    #plt.figure("2")
-    #ax = plt.figure().add_subplot(projection='3d')
-    #ax.plot(xs = populaion_list, ys = infected_list, zs = range(100) )
-    #plt.xlabel("Population")
-    #plt.ylabel("Infected")
-    #plt.clabel("Time")
+        for i in range (iteration_size):
+            G.step()
+            populaion_list.append(G.population)
+            infected_list.append(G.infected)
+
+            
+            #if G.infected == 0:
+                #break
+
+        average_births_per_decade = sum(G.no_of_children_by_parrent_age)/iteration_size
+        print(average_births_per_decade)
+        plt.figure("1")
+        plt.plot(populaion_list)
+        plt.plot(infected_list)
+        sum_of_births = sum(G.no_of_children_by_parrent_age)
+        print(G.no_of_children_by_parrent_age[1]/sum_of_births)
+        print(G.no_of_children_by_parrent_age[2]/sum_of_births)
+        print(G.no_of_children_by_parrent_age)
+        print(G.age_of_death)
+        print(G.region_population)
+        #plt.figure("2")
+        #ax = plt.figure().add_subplot(projection='3d')
+        #ax.plot(xs = populaion_list, ys = infected_list, zs = range(100) )
+        #plt.xlabel("Population")
+        #plt.ylabel("Infected")
+        #plt.clabel("Time")
 
 
-plt.show()
+    plt.show()
 
 """
 # Get a random edge and read its attributes
