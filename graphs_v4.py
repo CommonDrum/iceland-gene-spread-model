@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt; plt.close('all')
 import networkx as nx
 from matplotlib.animation import FuncAnimation
 import math
-import pandas as pd
 import csv
 from tqdm import tqdm
 
