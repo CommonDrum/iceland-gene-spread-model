@@ -54,7 +54,7 @@ class GraphInterface():
         self.no_of_children = [0,1,2,3]
         self.weights_children = [0.3, 0.2, 0.4, 0.1] #probability of having a child depending on the number of children
 
-        self.capacity = 15000
+        self.capacity = 1500 #HEREEEEEEEEEEEEEEEE
 
         self.sex = ['F','M']
         self.sex_weights = [0.5, 0.5] #probability of having a child depending on the number of children
@@ -95,6 +95,15 @@ class GraphInterface():
             "South" ,
             "Northeast",
             "Northwest"]
+        
+        self.region_color_map = {
+            "Southwest" : "red",
+            "Reykjavik North" : "blue",
+            "Reykjavik South" : "green",
+            "South" : "yellow",
+            "Northeast" : "orange",
+            "Northwest" : "purple"
+    }
         self.region_distribution= [0.28,0.185,0.183,0.145,0.12,0.087]
         self.migration_pull = [0.1,0.1,0.1,0.1,0.1,0.1]
         self.region_is_rural = [False,False,False,True,True,True]
@@ -126,6 +135,7 @@ class GraphInterface():
 
         if is_infected:
             self.infected += 1
+
         return id
 
 
@@ -135,7 +145,8 @@ class GraphInterface():
         
             chosen_region = random.choices(self.regions,self.region_distribution)[0]
             is_infected = random.choices(self.infection, self.weights_infection)[0]
-            self.new_node(age=age, is_infected=is_infected,region=chosen_region)
+            node = self.new_node(age=age, is_infected=is_infected,region=chosen_region)
+            self.remove_self_connections(node)
 
     def count_friends(self, node):
         friends = 0
@@ -191,9 +202,9 @@ class GraphInterface():
         child = self.new_node(is_infected=is_infected_child,region=self.G.nodes[node]['region'])
         self.G.add_edge(node,child, label='family',)
         self.no_of_children_by_parrent_age[self.G.nodes[node]['age']] += 1
-
+       
         for neighbor in self.G.neighbors(node):
-            if self.G.get_edge_data(node, neighbor).get('label') == 'family':
+            if self.G.get_edge_data(node, neighbor).get('label') == 'family' and neighbor != child:
                 self.G.add_edge(neighbor,child, label='family')
 
         if penalty == 0:
@@ -237,6 +248,12 @@ class GraphInterface():
 
             self.G.remove_node(node)
 
+    def remove_self_connections(self, node):
+        for neighbor in self.G.neighbors(node):
+            if neighbor == node:
+                self.G.remove_edge(node,neighbor)
+                return
+
     def relocate_node(self, node):
         # It is possible to relocate also the partner but we need to think about it more
         region_index = self.regions.index(self.G.nodes[node]['region'])
@@ -274,6 +291,7 @@ class GraphInterface():
             self.reproduce_node(node)
             self.relocate_node(node)
             self.age_node(node)
+            
     def step2(self):
         for node in list(self.G.nodes):
             self.find_friends_node(node)
@@ -281,9 +299,18 @@ class GraphInterface():
 
 
 if __name__ == "__main__": 
-    for i in range (5):
+   
+    region_color_map = {
+            "Southwest" : "red",
+            "Reykjavik North" : "blue",
+            "Reykjavik South" : "green",
+            "South" : "yellow",
+            "Northeast" : "orange",
+            "Northwest" : "purple"
+    }
+    for i in range (1):
         G = GraphInterface()
-        G.initialize(8000)
+        G.initialize(800)
         print(G.region_population)
         populaion_list = []
         female_population_list = []
@@ -291,11 +318,11 @@ if __name__ == "__main__":
         infected_list = []
         annual_reproduction_rate = []
         births_per_decade = []
-        iteration_size = 50
+        iteration_size = 25
         populaion_list.append(G.population)
         infected_list.append(G.infected)
 
-        for j in range (5):
+        for j in range (3):
             G.step2()
 
         for j in tqdm(range (iteration_size)):
@@ -329,9 +356,9 @@ if __name__ == "__main__":
         #plt.clabel("Time")
 
    
-    file_id = 0
+    file_id = uuid.uuid4().hex
 
-    with open('output'+str(i)+'_'+str(iteration_size)+'.csv', 'w', newline='') as file:
+    with open('output'+str(i) + '_'+ str(iteration_size)+'_' + str(file_id) + '.csv', 'w', newline='') as file:
     
 
     # Create a CSV writer object
@@ -357,7 +384,12 @@ if __name__ == "__main__":
         writer.writerow(G.region_population)
         #writer.writerows("Migration rate: " + str(G.migration_rate))
 
+    plt.figure("2")
+    node_colors = [region_color_map[G.G.nodes[n]['region']] for n in G.G.nodes()]
+    pos = nx.spring_layout(G.G)
+    nx.draw(G.G, with_labels=False, node_size=10, width=0.1, node_color=node_colors, pos=pos)
     plt.show()
+    plt.clear()
 
 """
 # Get a random edge and read its attributes
