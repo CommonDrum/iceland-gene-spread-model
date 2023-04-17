@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt; plt.close('all')
 import networkx as nx
 from matplotlib.animation import FuncAnimation
 import math
+import pandas as pd
+import csv
+
 
 
 
@@ -14,7 +17,7 @@ import math
 class GraphInterface():
     
     '''TODO:
-        - Migration :   
+        [+] Migration :   
             a) Choose a random sample of people from a region and move them to another region
             b) randomly choose ammount of friends  to delete  and add the friends from the new region
         - Decide on diffrent bonuses for rural
@@ -52,7 +55,7 @@ class GraphInterface():
         self.no_of_children = [0,1,2,3]
         self.weights_children = [0.3, 0.2, 0.4, 0.1] #probability of having a child depending on the number of children
 
-        self.capacity = 15000
+        self.capacity = 150000
 
         self.sex = ['F','M']
         self.sex_weights = [0.5, 0.5] #probability of having a child depending on the number of children
@@ -67,6 +70,8 @@ class GraphInterface():
         self.age = [0,1,2,3,4,5,6,7,8]
         self.age_weights = [0.131,0.126,0.145,0.15,0.131,0.117,0.103,0.066,0.026] #TODO: ADJUST WEIGHTS
         self.death_rate = [0,0,0,0,0,0,0,0.2,0.3,0.50]
+        #Migration
+        self.relocation_rate = [0.01,0.01,0.01,0.01,0.01,0.01]
 
         #Statistics
         self.population = 0
@@ -75,6 +80,8 @@ class GraphInterface():
         self.age_distribution = [0,0,0,0,0,0,0,0,0]
         self.age_of_death = [0,0,0,0,0,0,0,0,0,0]
         self.region_population = [0,0,0,0,0,0]
+        self.female_population = 0
+        self.male_population = 0
 
 
 
@@ -100,7 +107,8 @@ class GraphInterface():
 
     def new_node(self , age = 0, is_infected = False, partner = 0, family = [], no_of_children = 0, region = ""):
         id = uuid.uuid1().int
-        self.G.add_node(id, age=age, sex=random.choices(self.sex,self.sex_weights)[0], is_infected=is_infected, partner=partner, no_of_children=no_of_children,region=region)
+        sex = random.choices(self.sex,self.sex_weights)[0]
+        self.G.add_node(id, age=age, sex = sex, is_infected=is_infected, partner=partner, no_of_children=no_of_children,region=region)
         #connect the family
         region_index = self.regions.index(region)
         self.region_population[region_index] += 1
@@ -108,6 +116,11 @@ class GraphInterface():
             if i != id:
                 self.G.add_edge(id,i, family = True)
         self.population += 1
+        if sex == 'F':
+            self.female_population += 1
+        else:
+            self.male_population += 1
+
         if is_infected:
             self.infected += 1
         return id
@@ -213,13 +226,44 @@ class GraphInterface():
             self.age_of_death[self.G.nodes[node]['age']] += 1
             region_index = self.regions.index(self.G.nodes[node]['region'])
             self.region_population[region_index] -= 1
+
+            if self.G.nodes[node]['sex'] == 'F':
+                self.female_population -= 1
+            else:
+                self.male_population -= 1
+
             self.G.remove_node(node)
+
+    def relocate_node(self, node):
+        # It is possible to relocate also the partner but we need to think about it more
+        region_index = self.regions.index(self.G.nodes[node]['region'])
+        if random.random() < self.relocation_rate[region_index]:
+            new_region = random.choice(self.regions)
+            self.G.nodes[node]['region'] = new_region
+            new_region_index = self.regions.index(new_region)
+            self.region_population[region_index] -= 1 
+            self.region_population[new_region_index] += 1
+
+            #remove random friends from node
+            friends = [n for n in self.G.neighbors(node) if self.G.get_edge_data(node, n).get('label') == 'friend']
+            no_of_friends_removed = random.randint(0, len(friends))
+            friends = random.sample(friends, no_of_friends_removed)
+            for friend in friends:
+                self.G.remove_edge(node, friend)
+
+            #add new friends to node
+            self.find_friends_node(node, no_of_friends_removed)
+
+
+
+
 
     def step(self):
         for node in list(self.G.nodes):
             self.find_friends_node(node)
             self.partner_node(node)
             self.reproduce_node(node)
+            self.relocate_node(node)
             self.age_node(node)
     def step2(self):
         for node in list(self.G.nodes):
@@ -230,33 +274,39 @@ class GraphInterface():
 if __name__ == "__main__": 
     for i in range (1):
         G = GraphInterface()
-        G.initialize(8000)
+        G.initialize(80000)
         print(G.region_population)
         populaion_list = []
+        female_population_list = []
+        male_population_list = []
         infected_list = []
-        average_births_per_decade = 0
-        iteration_size = 10
+        annual_reproduction_rate = []
+        births_per_decade = []
+        iteration_size = 50
         populaion_list.append(G.population)
         infected_list.append(G.infected)
 
-        for i in range (10):
+        for j in range (5):
             G.step2()
 
-        for i in range (iteration_size):
+        for j in range (iteration_size):
             G.step()
             populaion_list.append(G.population)
             infected_list.append(G.infected)
+            male_population_list.append(G.male_population)
+            female_population_list.append(G.female_population)
+            annual_reproduction_rate
 
             
             #if G.infected == 0:
                 #break
 
-        average_births_per_decade = sum(G.no_of_children_by_parrent_age)/iteration_size
-        print(average_births_per_decade)
+        
         plt.figure("1")
         plt.plot(populaion_list)
         plt.plot(infected_list)
         sum_of_births = sum(G.no_of_children_by_parrent_age)
+        births_per_decade.append(sum_of_births)
         print(G.no_of_children_by_parrent_age[1]/sum_of_births)
         print(G.no_of_children_by_parrent_age[2]/sum_of_births)
         print(G.no_of_children_by_parrent_age)
@@ -269,6 +319,34 @@ if __name__ == "__main__":
         #plt.ylabel("Infected")
         #plt.clabel("Time")
 
+   
+    file_id = 0
+
+    with open('output'+str(i)+'_'+str(iteration_size)+'.csv', 'w', newline='') as file:
+    
+
+    # Create a CSV writer object
+        writer = csv.writer(file)
+    # Write the data to the CSV file
+        writer.writerow("Iteration: ")
+        writer.writerow(range(iteration_size + 1))
+        writer.writerow("Population: ")
+        writer.writerow(populaion_list)
+        writer.writerow("Male population:")
+        writer.writerow(male_population_list)
+        writer.writerow("Female population:")
+        writer.writerow(female_population_list)
+        writer.writerow("Infected: ")
+        writer.writerow(infected_list)
+        writer.writerow("Age of mother at birth: ")
+        writer.writerow(G.no_of_children_by_parrent_age)
+        writer.writerow("Age of death: ")
+        writer.writerow(G.age_of_death)
+        writer.writerow("Age distribution: ")
+        writer.writerow(G.age_distribution)
+        writer.writerow("Region population: ")
+        writer.writerow(G.region_population)
+        #writer.writerows("Migration rate: " + str(G.migration_rate))
 
     plt.show()
 
