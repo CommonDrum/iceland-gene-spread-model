@@ -8,8 +8,7 @@ from matplotlib.animation import FuncAnimation
 import math
 import pandas as pd
 import csv
-
-
+from tqdm import tqdm
 
 
 
@@ -55,7 +54,7 @@ class GraphInterface():
         self.no_of_children = [0,1,2,3]
         self.weights_children = [0.3, 0.2, 0.4, 0.1] #probability of having a child depending on the number of children
 
-        self.capacity = 150000
+        self.capacity = 15000
 
         self.sex = ['F','M']
         self.sex_weights = [0.5, 0.5] #probability of having a child depending on the number of children
@@ -70,8 +69,12 @@ class GraphInterface():
         self.age = [0,1,2,3,4,5,6,7,8]
         self.age_weights = [0.131,0.126,0.145,0.15,0.131,0.117,0.103,0.066,0.026] #TODO: ADJUST WEIGHTS
         self.death_rate = [0,0,0,0,0,0,0,0.2,0.3,0.50]
+
+
         #Migration
-        self.relocation_rate = [0.01,0.01,0.01,0.01,0.01,0.01]
+        self.relocation_rate = [0.01,0.01,0.01,0.02,0.02,0.02]
+        self.age_relocation_modifier = [0.00,1.50,1.50,1,1,0.8,0.8,0.5,0.5,0.5]
+        self.age_prefered_region = ['none',"urban","urban","rural","rural","rural","rural","rural","rural","rural"]
 
         #Statistics
         self.population = 0
@@ -237,12 +240,18 @@ class GraphInterface():
     def relocate_node(self, node):
         # It is possible to relocate also the partner but we need to think about it more
         region_index = self.regions.index(self.G.nodes[node]['region'])
-        if random.random() < self.relocation_rate[region_index]:
+        if random.random() < self.relocation_rate[region_index] * self.age_relocation_modifier[self.G.nodes[node]["age"]]:
             new_region = random.choice(self.regions)
             self.G.nodes[node]['region'] = new_region
             new_region_index = self.regions.index(new_region)
             self.region_population[region_index] -= 1 
             self.region_population[new_region_index] += 1
+            #change children region 
+            children = [n for n in self.G.neighbors(node) if self.G.get_edge_data(node, n).get('label') == 'child']
+            for child in children:
+                if self.G.nodes[child]['age'] in [0,1]:
+                    self.G.nodes[child]['region'] = new_region
+                
 
             #remove random friends from node
             friends = [n for n in self.G.neighbors(node) if self.G.get_edge_data(node, n).get('label') == 'friend']
@@ -272,9 +281,9 @@ class GraphInterface():
 
 
 if __name__ == "__main__": 
-    for i in range (1):
+    for i in range (5):
         G = GraphInterface()
-        G.initialize(80000)
+        G.initialize(8000)
         print(G.region_population)
         populaion_list = []
         female_population_list = []
@@ -289,7 +298,7 @@ if __name__ == "__main__":
         for j in range (5):
             G.step2()
 
-        for j in range (iteration_size):
+        for j in tqdm(range (iteration_size)):
             G.step()
             populaion_list.append(G.population)
             infected_list.append(G.infected)
