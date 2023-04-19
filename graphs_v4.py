@@ -319,7 +319,7 @@ if __name__ == "__main__":
         annual_reproduction_rate = []
         births_per_decade = []
         region_population = []
-        iteration_size = 25
+        iteration_size = 400
         populaion_list.append(G.population)
         infected_list.append(G.infected)
 
@@ -336,8 +336,8 @@ if __name__ == "__main__":
             annual_reproduction_rate
 
             
-            #if G.infected == 0:
-                #break
+            if G.infected == 0:
+                break
 
         
         plt.figure("1")
@@ -386,6 +386,8 @@ if __name__ == "__main__":
         writer.writerow(G.region_population)
         writer.writerow("YOLO: ")
         writer.writerow(region_population)
+        writer.writerow("Births per decade: ")
+        writer.writerow(births_per_decade)
         #writer.writerows("Migration rate: " + str(G.migration_rate))
 
     plt.figure("2")
