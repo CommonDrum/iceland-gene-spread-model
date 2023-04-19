@@ -262,6 +262,7 @@ class GraphInterface():
             new_region_index = self.regions.index(new_region)
             self.region_population[region_index] -= 1 
             self.region_population[new_region_index] += 1
+
             #change children region 
             children = [n for n in self.G.neighbors(node) if self.G.get_edge_data(node, n).get('label') == 'child']
             for child in children:
@@ -317,6 +318,7 @@ if __name__ == "__main__":
         infected_list = []
         annual_reproduction_rate = []
         births_per_decade = []
+        region_population = []
         iteration_size = 25
         populaion_list.append(G.population)
         infected_list.append(G.infected)
@@ -330,6 +332,7 @@ if __name__ == "__main__":
             infected_list.append(G.infected)
             male_population_list.append(G.male_population)
             female_population_list.append(G.female_population)
+            region_population.append(G.region_population)
             annual_reproduction_rate
 
             
@@ -381,6 +384,8 @@ if __name__ == "__main__":
         writer.writerow(G.age_distribution)
         writer.writerow("Region population: ")
         writer.writerow(G.region_population)
+        writer.writerow("YOLO: ")
+        writer.writerow(region_population)
         #writer.writerows("Migration rate: " + str(G.migration_rate))
 
     plt.figure("2")
