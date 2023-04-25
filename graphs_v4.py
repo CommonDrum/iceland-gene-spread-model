@@ -84,6 +84,7 @@ class GraphInterface():
         self.region_population = [0,0,0,0,0,0]
         self.female_population = 0
         self.male_population = 0
+        
 
 
 
